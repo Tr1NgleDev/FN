@@ -1,7 +1,7 @@
 //#define DEBUG_CONSOLE // Uncomment this if you want a debug console
 
 // Mod Name. Make sure it matches the mod folder's name. Also don't forget to change the output DLL name in Project Properties->General->Target Name
-#define MOD_NAME "4DMod"
+#define MOD_NAME "F1"
 #define MOD_VER "1.0"
 
 #include <Windows.h>
@@ -9,29 +9,25 @@
 #include <4dm.h>
 using namespace fdm;
 
+bool drawHud = true;
 
-void(__thiscall* StateGame_init)(StateGame* self, StateManager& s);
-void __fastcall StateGame_init_H(StateGame* self, StateManager& s)
+void(__thiscall* Player_renderHud)(Player* self, GLFWwindow* window);
+void __fastcall Player_renderHud_H(Player* self, GLFWwindow* window) 
 {
-	// Your code that runs at first frame here (it calls when you load into the world)
-
-	StateGame_init(self, s);
+	if(drawHud)
+		Player_renderHud(self, window);
 }
 
-void(__thiscall* Player_update)(Player* self, World* world, double dt, EntityPlayer* entityPlayer);
-void __fastcall Player_update_H(Player* self, World* world, double dt, EntityPlayer* entityPlayer) 
+void(__thiscall* StateGame_keyInput)(StateGame* self, StateManager& s, int key, int scancode, int action, int mods);
+void __fastcall StateGame_keyInput_H(StateGame* self, StateManager& s, int key, int scancode, int action, int mods)
 {
-	// Your code that runs every frame here (it only calls when you play in world, because its Player's function)
-
-	Player_update(self, world, dt, entityPlayer);
-}
-
-bool(__thiscall* Player_keyInput)(Player* self, GLFWwindow* window, World* world, int key, int scancode, int action, int mods);
-bool __fastcall Player_keyInput_H(Player* self, GLFWwindow* window, World* world, int key, int scancode, int action, int mods) 
-{
-	// Your code that runs when Key Input happens (check GLFW Keyboard Input tutorials)|(it only calls when you play in world, because its Player's function)
-
-	return Player_keyInput(self, window, world, key, scancode, action, mods);
+	if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
+	{
+		drawHud = !drawHud;
+		self->crosshairRenderer.setColor(1.f, 1.f, 1.f, (drawHud ? 1.f : 0.f));
+	}
+		
+	return StateGame_keyInput(self, s, key, scancode, action, mods);
 }
 
 DWORD WINAPI Main_Thread(void* hModule)
@@ -46,14 +42,9 @@ DWORD WINAPI Main_Thread(void* hModule)
 	glfwInit();
 	glewInit();
 
-	// Hook to the StateGame::init function
-	Hook(reinterpret_cast<void*>(FUNC_STATEGAME_INIT), reinterpret_cast<void*>(&StateGame_init_H), reinterpret_cast<void**>(&StateGame_init));
+	Hook(reinterpret_cast<void*>(FUNC_PLAYER_RENDERHUD), reinterpret_cast<void*>(&Player_renderHud_H), reinterpret_cast<void**>(&Player_renderHud));
 
-	// Hook to the Player::update function
-	Hook(reinterpret_cast<void*>(FUNC_PLAYER_UPDATE), reinterpret_cast<void*>(&Player_update_H), reinterpret_cast<void**>(&Player_update));
-
-	// Hook to the Player::keyInput function
-	Hook(reinterpret_cast<void*>(FUNC_PLAYER_KEYINPUT), reinterpret_cast<void*>(&Player_keyInput_H), reinterpret_cast<void**>(&Player_keyInput));
+	Hook(reinterpret_cast<void*>(FUNC_STATEGAME_KEYINPUT), reinterpret_cast<void*>(&StateGame_keyInput_H), reinterpret_cast<void**>(&StateGame_keyInput));
 
 	EnableHook(0);
 	return true;
