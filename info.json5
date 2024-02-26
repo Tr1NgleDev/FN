@@ -1,0 +1,14 @@
+{
+  id: "tr1ngledev.f1",
+  name: "F1",
+  author: "Tr1NgleDev",
+  description: "Mod that allows you to toggle on/off hud like in minecraft by pressing F1 (supports 4DKeyBinds)",
+  version: "1.1",
+  gameVersion: "0.2.1.4",
+  modDLL: "F1.dll",
+  externalDLLs: [
+  ],
+  dependencies: {
+    "tr1ngledev.4dkeybinds": "? before >= 1.1"
+  },
+}
