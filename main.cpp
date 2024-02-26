@@ -17,6 +17,8 @@ $hook(void, Player, renderHud, GLFWwindow* window)
 
 void toggleHud(GLFWwindow* window, int action, int mods)
 {
+	if (action != GLFW_PRESS)
+		return;
 	drawHud = !drawHud;
 	StateGame::instanceObj->crosshairRenderer.setColor(1.f, 1.f, 1.f, (drawHud ? 1.f : 0.f));
 }
