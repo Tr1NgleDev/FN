@@ -715,13 +715,13 @@ $hook(void, Player, update, World* world, double dt, EntityPlayer* entityPlayer)
 			freecam.vel += freecam.left * (float)dt * speed;
 		if (self->keys.d)
 			freecam.vel -= freecam.left * (float)dt * speed;
-		if (self->keys.q && self->keys.shift)
+		if (self->keys.q)
 			freecam.vel += freecam.over * (float)dt * speed;
-		if (self->keys.e && self->keys.shift)
+		if (self->keys.e)
 			freecam.vel -= freecam.over * (float)dt * speed;
 		if (self->keys.space)
 			freecam.vel += freecam.up * (float)dt * speed;
-		if (!self->keys.q && !self->keys.e && self->keys.shift)
+		if (self->keys.shift)
 			freecam.vel -= freecam.up * (float)dt * speed;
 		self->keys.w = false;
 		self->keys.a = false;
@@ -895,6 +895,32 @@ doOriginal:
 
 	if (entity)
 		*(Player**)&entityPlayer->ownedPlayer = entityPlayerOwnedPlayer;
+
+	if (viewMode == FREECAM)
+	{
+		uint8_t block = self->world->getBlock(freecam.pos);
+		if (freecam.pos.y <= 0)
+			block = BlockInfo::LAVA;
+
+		const BlockInfo::BlockData& blockData = BlockInfo::Blocks[block];
+		if (blockData.opaque)
+		{
+			glClear(GL_COLOR_BUFFER_BIT);
+			glDisable(GL_DEPTH_TEST);
+			const Tex2D* tex = ResourceManager::get("tiles.png", false);
+			const Shader* sh = ShaderManager::get("blockNormalShader");
+			glBindTexture(tex->target, tex->ID); // i still didn't add Tex2D::use() or Tex2D::id() :skull:
+
+			sh->use();
+			glUniform4f(glGetUniformLocation(sh->id(), "lightDir"), 0, 1, 0, 0);
+			glUniform2ui(glGetUniformLocation(sh->id(), "texSize"), 96, 16);
+
+			m4::Mat5 MV = m4::createCamera(glm::vec4{ 0.5f }, -freecam.forward, freecam.up, -freecam.left, freecam.over);
+			glUniform1fv(glGetUniformLocation(sh->id(), "MV"), sizeof(m4::Mat5) / sizeof(float), &MV[0][0]);
+			BlockInfo::renderItemMesh(block);
+			glEnable(GL_DEPTH_TEST);
+		}
+	}
 }
 
 $hook(void, Player, updateComponentVectors)
