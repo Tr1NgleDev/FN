@@ -123,10 +123,10 @@ glm::ivec4 getChunkRelative(const glm::ivec4& pos)
 {
 	return glm::ivec4
 	{
-		pos.x >= 0 ? pos.x % 8 : ((8 * pos.x / 8 + 8) + pos.x) % 8,
+		pos.x >= 0 ? pos.x % 8 : ((8 * (-pos.x / 8) + 8) + pos.x) % 8,
 		pos.y,
-		pos.z >= 0 ? pos.z % 8 : ((8 * pos.z / 8 + 8) + pos.z) % 8,
-		pos.w >= 0 ? pos.w % 8 : ((8 * pos.w / 8 + 8) + pos.w) % 8,
+		pos.z >= 0 ? pos.z % 8 : ((8 * (-pos.z / 8) + 8) + pos.z) % 8,
+		pos.w >= 0 ? pos.w % 8 : ((8 * (-pos.w / 8) + 8) + pos.w) % 8,
 	};
 }
 
