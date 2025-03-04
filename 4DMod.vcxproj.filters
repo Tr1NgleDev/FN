@@ -23,5 +23,8 @@
     <ClInclude Include="4DKeyBinds.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ilerp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
