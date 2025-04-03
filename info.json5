@@ -5,6 +5,7 @@
   description: "Mod that adds various Function key features like: \n \
 - HUD Toggle (F1) \n \
 - Debug Info (F3) \n \
+- Toggle Target Block (F4) \n \
 - Third-Person View (F5) \n \
 - Freecam (F6) \n \
 - Reload Chunks (F8) \n \

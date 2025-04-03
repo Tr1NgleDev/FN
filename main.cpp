@@ -25,6 +25,7 @@ enum ViewMode
 };
 
 bool drawHud = true;
+bool drawTargetBlock = true;
 bool debugInfo = false;
 bool chunkBorders = false;
 ViewMode viewMode = FIRST_PERSON;
@@ -165,9 +166,9 @@ void renderDebugInfo(Player* player)
 	if (debugInfo)
 		debugInfoTime += dt;
 
-	FontRenderer& font = StateGame::instanceObj->font;
-	QuadRenderer& qr = StateGame::instanceObj->qr;
-	World* world = StateGame::instanceObj->world.get();
+	FontRenderer& font = StateGame::instanceObj.font;
+	QuadRenderer& qr = StateGame::instanceObj.qr;
+	World* world = StateGame::instanceObj.world.get();
 	ChunkLoader* chunkLoader = nullptr;
 	if (world->getType() == World::TYPE_SINGLEPLAYER)
 		chunkLoader = &((WorldSingleplayer*)world)->chunkLoader;
@@ -228,11 +229,11 @@ void renderDebugInfo(Player* player)
 			text("4", magenta, { 0,line });
 			text("D", cyan, { 1,line });
 			text("Miner", lightGray, { 3,line });
-			text(StateTitleScreen::instanceObj->versionText.text, white, { 9,line });
+			text(StateTitleScreen::instanceObj.versionText.text, white, { 9,line });
 		}
 		++line;
 
-		// FPS: fps/fpsAverage
+		// FPS: fps (fpsAverage)
 		{
 			++line;
 
@@ -427,8 +428,8 @@ void renderDebugInfo(Player* player)
 			text("ID:", yellow, { 4, line });
 			uint8_t block = world->getBlock(player->targetBlock);
 			std::string name = "Unknown";
-			if (BlockInfo::blockNames->contains(block))
-				name = BlockInfo::blockNames->at(block);
+			if (BlockInfo::blockNames.contains(block))
+				name = BlockInfo::blockNames.at(block);
 			text(std::format("{} ({})", (int)block, name), white, {4 + 4, line});
 		}
 		++line;
@@ -503,7 +504,7 @@ $hook(void, Player, renderHud, GLFWwindow* window)
 				self->equipment.render({ -1, -1 });
 			}
 
-			TexRenderer& healthRenderer = *self->healthRenderer;
+			TexRenderer& healthRenderer = self->healthRenderer;
 
 			int h = (int)(self->health / 100.f * 48.f);
 			healthRenderer.setClip(0, 48 - h, 32, h);
@@ -558,6 +559,12 @@ $hook(void, Player, renderHud, GLFWwindow* window)
 	}
 }
 
+$hook(void, Player, renderTargetBlock, const m4::Mat5& MV, bool renderBG)
+{
+	if (drawTargetBlock)
+		original(self, MV, renderBG);
+}
+
 StateManager* stateManager = nullptr;
 
 void toggleHud(GLFWwindow* window, int action, int mods)
@@ -567,26 +574,33 @@ void toggleHud(GLFWwindow* window, int action, int mods)
 
 	drawHud = !drawHud;
 
-	StateGame::instanceObj->crosshairRenderer.setColor(1.f, 1.f, 1.f, (drawHud ? 1.f : 0.f));
+	StateGame::instanceObj.crosshairRenderer.setColor(1.f, 1.f, 1.f, (drawHud ? 1.f : 0.f));
+}
+void toggleTargetBlock(GLFWwindow* window, int action, int mods)
+{
+	if (action != GLFW_PRESS)
+		return;
+
+	drawTargetBlock = !drawTargetBlock;
 }
 void toggleViewMode(GLFWwindow* window, int action, int mods)
 {
 	if (action != GLFW_PRESS)
 		return;
 
-	Player& player = StateGame::instanceObj->player;
+	Player& player = StateGame::instanceObj.player;
 
 	viewMode = (ViewMode)(((int)viewMode + 1) % VIEW_MODES_COUNT);
 
 	player.updateAllComponentVectors();
-	player.updateCameraPos(StateGame::instanceObj->world.get());
+	player.updateCameraPos(StateGame::instanceObj.world.get());
 }
 void toggleFreeCam(GLFWwindow* window, int action, int mods)
 {
 	if (action != GLFW_PRESS)
 		return;
 
-	Player& player = StateGame::instanceObj->player;
+	Player& player = StateGame::instanceObj.player;
 
 	if (viewMode == FREECAM)
 	{
@@ -604,19 +618,19 @@ void toggleFreeCam(GLFWwindow* window, int action, int mods)
 	}
 
 	player.updateAllComponentVectors();
-	player.updateCameraPos(StateGame::instanceObj->world.get());
+	player.updateCameraPos(StateGame::instanceObj.world.get());
 }
 void toggleFreeCamControl(GLFWwindow* window, int action, int mods)
 {
 	if (action != GLFW_PRESS)
 		return;
 
-	Player& player = StateGame::instanceObj->player;
+	Player& player = StateGame::instanceObj.player;
 
 	freecam.inControl = !freecam.inControl;
 
 	player.updateAllComponentVectors();
-	player.updateCameraPos(StateGame::instanceObj->world.get());
+	player.updateCameraPos(StateGame::instanceObj.world.get());
 }
 void toggleDebugInfo(GLFWwindow* window, int action, int mods)
 {
@@ -631,7 +645,7 @@ void reloadChunks(GLFWwindow* window, int action, int mods)
 	if (action != GLFW_PRESS)
 		return;
 
-	StateGame& stateGame = *StateGame::instanceObj;
+	StateGame& stateGame = StateGame::instanceObj;
 	stateGame.player.hyperplaneUpdateFlag = true;
 	stateGame.world->updateLocal(*stateManager, &stateGame.player, 0);
 }
@@ -640,7 +654,7 @@ void toggleFullscreen(GLFWwindow* window, int action, int mods)
 	if (action != GLFW_PRESS)
 		return;
 
-	StateSettings::instanceObj->setFullscreenMode(window, !StateSettings::instanceObj->fullscreen);
+	StateSettings::instanceObj.setFullscreenMode(window, !StateSettings::instanceObj.fullscreen);
 }
 
 $hook(void, StateGame, keyInput, StateManager& s, int key, int scancode, int action, int mods)
@@ -654,6 +668,9 @@ $hook(void, StateGame, keyInput, StateManager& s, int key, int scancode, int act
 			break;
 		case GLFW_KEY_F3:
 			toggleDebugInfo(s.window, action, mods);
+			break;
+		case GLFW_KEY_F4:
+			toggleTargetBlock(s.window, action, mods);
 			break;
 		case GLFW_KEY_F5:
 			toggleViewMode(s.window, action, mods);
@@ -690,7 +707,7 @@ $hook(void, StateIntro, init, StateManager& s)
 
 $hook(void, Player, update, World* world, double dt, EntityPlayer* entityPlayer)
 {
-	if (self != &StateGame::instanceObj->player) return;
+	if (self != &StateGame::instanceObj.player) return;
 
 	bool w = self->keys.w;
 	bool s = self->keys.s;
@@ -769,7 +786,7 @@ $hook(void, Player, update, World* world, double dt, EntityPlayer* entityPlayer)
 
 $hook(void, EntityPlayer, setPos, const glm::vec4& pos)
 {
-	Player& player = StateGame::instanceObj->player;
+	Player& player = StateGame::instanceObj.player;
 
 	if (&player != self->ownedPlayer.get()) return original(self, pos);
 
@@ -779,7 +796,7 @@ $hook(void, EntityPlayer, setPos, const glm::vec4& pos)
 static Player* entityPlayerOwnedPlayer = nullptr;
 $hook(void, EntityPlayer, update, World* world, double dt)
 {
-	Player& player = StateGame::instanceObj->player;
+	Player& player = StateGame::instanceObj.player;
 	
 	if (self->id != player.EntityPlayerID) return original(self, world, dt);
 
@@ -857,10 +874,10 @@ $hook(void, StateGame, render, StateManager& s)
 	{
 		*(Player**)&entityPlayer->ownedPlayer = &self->player;
 
-		if (loadedSkin != StateSkinChooser::instanceObj->skinPath && !StateSkinChooser::instanceObj->skinPath.empty())
+		if (loadedSkin != StateSkinChooser::instanceObj.skinPath && !StateSkinChooser::instanceObj.skinPath.empty())
 		{
-			loadedSkin = StateSkinChooser::instanceObj->skinPath;
-			entityPlayer->skin.load(StateSkinChooser::instanceObj->skinPath);
+			loadedSkin = StateSkinChooser::instanceObj.skinPath;
+			entityPlayer->skin.load(StateSkinChooser::instanceObj.skinPath);
 			entityPlayer->skinRenderer.skin = &entityPlayer->skin;
 		}
 	}
@@ -1022,15 +1039,17 @@ $hook(void, StateGame, init, StateManager& s)
 $exec
 {
 	KeyBinds::addBind("FN", "Toggle HUD",			glfw::Keys::F1, KeyBindsScope::STATEGAME, toggleHud);
+	//						"Screenshot"			glfw::Keys::F2
 	KeyBinds::addBind("FN", "Debug Info",			glfw::Keys::F3, KeyBindsScope::STATEGAME, toggleDebugInfo);
+	KeyBinds::addBind("FN", "Toggle Target Block",	glfw::Keys::F4, KeyBindsScope::STATEGAME, toggleTargetBlock);
 	KeyBinds::addBind("FN", "Third-Person View",	glfw::Keys::F5, KeyBindsScope::STATEGAME, toggleViewMode);
 	KeyBinds::addBind("FN", "Freecam",				glfw::Keys::F6, KeyBindsScope::STATEGAME, toggleFreeCam);
-	KeyBinds::addBind("FN", "Freecam Control",		glfw::Keys::P, KeyBindsScope::STATEGAME, toggleFreeCamControl);
 	KeyBinds::addBind("FN", "Reload Chunks",		glfw::Keys::F8, KeyBindsScope::STATEGAME, reloadChunks);
 	KeyBinds::addBind("FN", "Fullscreen",			glfw::Keys::F11, KeyBindsScope::STATEGAME, toggleFullscreen);
+	KeyBinds::addBind("FN", "Freecam Control",		glfw::Keys::P, KeyBindsScope::STATEGAME, toggleFreeCamControl);
 }
 
 $hook(bool, Player, isHoldingCompass)
 {
-	return original(self) || (self->equipment.getSlot(0)->get() && self->equipment.getSlot(0)->get()->getName() == "Compass");
+	return original(self) || (self->equipment.getSlot(0).get() && self->equipment.getSlot(0).get()->getName() == "Compass");
 }

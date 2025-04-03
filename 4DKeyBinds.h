@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glfw.h>
+#include <4dm.h>
 #include <string>
 #include <type_traits>
 #include <windows.h>
@@ -139,34 +139,35 @@ namespace glfw
 namespace KeyBinds
 {
     using BindCallback = std::add_pointer<void(GLFWwindow* window, int action, int mods)>::type;
+    inline const fdm::stl::string id = "tr1ngledev.4dkeybinds";
 
     inline bool isLoaded()
     {
-        return fdm::isModLoaded("tr1ngledev.4dkeybinds");
+        return fdm::isModLoaded(id);
     }
 
     // creates a bind with name "bindNamespace:bindName"
-    inline void addBind(const std::string& bindNamespace, const std::string& bindName, glfw::Keys defaultKey, KeyBindsScope scope, BindCallback callback)
+    inline void addBind(const fdm::stl::string& bindNamespace, const fdm::stl::string& bindName, glfw::Keys defaultKey, KeyBindsScope scope, BindCallback callback)
     {
         if (!isLoaded())
             return;
-        reinterpret_cast<void(__stdcall*)(const std::string&, int, int, BindCallback)>(GetProcAddress(fdm::getModHandle("tr1ngledev.4dkeybinds"), "addBind"))
+        reinterpret_cast<void(__stdcall*)(const fdm::stl::string&, int, int, BindCallback)>(fdm::getModFuncPointer(id, "addBind"))
             (std::format("{}:{}", bindNamespace, bindName), (int)defaultKey, (int)scope, callback);
     }
 
-    inline void hookBind(const std::string& bindNamespace, const std::string& bindName, KeyBindsScope scope, BindCallback callback)
+    inline void hookBind(const fdm::stl::string& bindNamespace, const fdm::stl::string& bindName, KeyBindsScope scope, BindCallback callback)
     {
         if (!isLoaded())
             return;
-        reinterpret_cast<void(__stdcall*)(const std::string&, KeyBindsScope, BindCallback)>(GetProcAddress(fdm::getModHandle("tr1ngledev.4dkeybinds"), "hookBind"))
+        reinterpret_cast<void(__stdcall*)(const fdm::stl::string&, KeyBindsScope, BindCallback)>(fdm::getModFuncPointer(id, "hookBind"))
             (std::format("{}:{}", bindNamespace, bindName), scope, callback);
     }
 
-    inline void triggerBind(const std::string& bindNamespace, const std::string& bindName, KeyBindsScope scope, int action, int mods)
+    inline void triggerBind(const fdm::stl::string& bindNamespace, const fdm::stl::string& bindName, KeyBindsScope scope, int action, int mods)
     {
         if (!isLoaded())
             return;
-        reinterpret_cast<void(__stdcall*)(const std::string&, KeyBindsScope, int, int)>(GetProcAddress(fdm::getModHandle("tr1ngledev.4dkeybinds"), "triggerBind"))
+        reinterpret_cast<void(__stdcall*)(const fdm::stl::string&, KeyBindsScope, int, int)>(fdm::getModFuncPointer(id, "triggerBind"))
             (std::format("{}:{}", bindNamespace, bindName), scope, action, mods);
     }
 }
